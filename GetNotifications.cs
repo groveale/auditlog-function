@@ -44,7 +44,7 @@ namespace groveale
                 // // store the new lists in the table
                 foreach (var interaction in newCopilotInteractions)
                 {
-                    await _azureTableService.AddCopilotInteractionAysnc(interaction);
+                    await _azureTableService.AddCopilotInteractionDetailsAsync(interaction);
                 }
 
                 return new OkObjectResult(newCopilotInteractions);

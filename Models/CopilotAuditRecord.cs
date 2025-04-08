@@ -33,7 +33,7 @@ namespace groveale
 
     public class CopilotEventData
     {
-        public List<string> AISystemPlugin { get; set; } = new List<string>();
+        public List<AISystemPlugin> AISystemPlugin { get; set; } = new List<AISystemPlugin>();
         public List<AccessedResource> AccessedResources { get; set; } = new List<AccessedResource>();
         public string AppHost { get; set; }
         public List<Context> Contexts { get; set; } = new List<Context>();
@@ -65,6 +65,11 @@ namespace groveale
     {
         public string Provider { get; set; }
         public string ModelName { get; set; }
+    }
+    public class AISystemPlugin
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
     }
 
     // Helper class for deserializing from JSON

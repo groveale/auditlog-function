@@ -1,0 +1,28 @@
+{
+  "CreationTime": "2025-04-08T11:47:27",
+  "Id": "3bcad1be-0c1c-4b54-9e61-d8764f2518d1",
+  "Operation": "CopilotInteraction",
+  "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+  "RecordType": 261,
+  "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+  "UserType": 0,
+  "Version": 1,
+  "Workload": "Copilot",
+  "ClientIP": "",
+  "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+  "ClientRegion": "us",
+  "CopilotEventData": {
+    "AISystemPlugin": [{ "Id": "BingWebSearch", "Name": "BuiltIn" }],
+    "AccessedResources": [],
+    "AppHost": "Teams",
+    "Contexts": [],
+    "MessageIds": [],
+    "Messages": [
+      { "Id": "1744112847090", "isPrompt": true },
+      { "Id": "1744112847388", "isPrompt": false }
+    ],
+    "ModelTransparencyDetails": [{ "ModelName": "DEEP_LEO" }],
+    "ThreadId": "19:LO5WFG9G3GHtpx5olhwEnouCVmkL7AFZ6qWvi593KdU1@thread.v2"
+  },
+  "CopilotLogVersion": "1.0.0.0"
+}

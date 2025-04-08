@@ -1,0 +1,25 @@
+{
+  "CopilotEventData": {
+    "AppHost": "Designer",
+    "Contexts": [],
+    "ThreadId": "",
+    "MessageIds": [],
+    "Messages": [{ "Id": "0", "isPrompt": true }],
+    "AccessedResources": [],
+    "ModelTransparencyDetails": [],
+    "AISystemPlugin": [],
+    "CorrelationId": "3fd40c4c-c935-4ef0-95ba-a63742b2d085"
+  },
+  "ClientRegion": "",
+  "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+  "ClientIP": "20.107.5.167",
+  "Id": "d99efd9a-a6ff-4c46-9d2b-5265eee759de",
+  "RecordType": 261,
+  "CreationTime": "2025-04-08T11:45:56",
+  "Operation": "CopilotInteraction",
+  "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+  "UserType": 0,
+  "UserKey": "10032003B9BBC79A",
+  "Workload": "Copilot",
+  "Version": 1
+}

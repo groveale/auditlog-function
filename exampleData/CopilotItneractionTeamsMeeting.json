@@ -1,0 +1,34 @@
+{
+    "creationTime": "2025-04-08T15:29:43",
+    "id": "9c42808d-1d37-4209-b825-8f5b04079794",
+    "operation": null,
+    "organizationId": "00000000-0000-0000-0000-000000000000",
+    "recordType": 0,
+    "userKey": null,
+    "userType": 0,
+    "version": 0,
+    "workload": null,
+    "clientIP": null,
+    "clientRegion": null,
+    "userId": "admin@M365CPI77517573.onmicrosoft.com",
+    "copilotEventData": {
+        "aiSystemPlugin": [
+            {
+                "id": "EnterpriseSearch",
+                "name": "BuiltIn"
+            }
+        ],
+        "accessedResources": [],
+        "appHost": "Teams",
+        "contexts": [
+            {
+                "id": "https://microsoft.teams.com/threads/19:meeting_Zjc0MTA3YTQtZjY0NC00ZjYwLTlhZTctNzEzNzkzYWYzNWZi@thread.v2",
+                "type": "TeamsMeeting"
+            }
+        ],
+        "messageIds": [],
+        "messages": [],
+        "modelTransparencyDetails": [],
+        "threadId": null
+    }
+}

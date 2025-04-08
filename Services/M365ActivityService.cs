@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using groveale.Models;
+using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -19,7 +20,9 @@ namespace groveale.Services
         Task<string> StopSubscriptionAsync(string configuredContentType);
 
         Task<List<ListAuditObj>> GetListCreatedNotificationsAsync(List<NotificationResponse> notifications);
-        Task<List<dynamic>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications);
+        Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications);
+
+        Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications);
 
         Task<List<NotificationResponse>> GetAvailableNotificationsAsync(string configuredContentType);
         
@@ -182,7 +185,74 @@ namespace groveale.Services
             }
         }
 
-         public async Task<List<dynamic>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications)
+         public async Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications)
+        {
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                await AuthenticateAsync();
+            }
+
+            // You will need to change this to match the object you are deserializing
+            List<AuditData> copilotInteractions = new List<AuditData>();
+
+            // Process each notification
+            foreach (NotificationResponse notification in notifications)
+            {
+                // Add your processing logic here
+                // For example, log the notification details
+                _logger.LogInformation($"Processing notification for TenantId: {notification.TenantId}, ContentId: {notification.ContentId}");
+                _logger.LogInformation($"Notification Id: {notification.ContentId}");
+
+                var url = notification.ContentUri;
+                var response = await _httpClient.GetAsync(url);
+
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var streamReader = new StreamReader(stream))
+                using (var jsonReader = new JsonTextReader(streamReader))
+                {
+                    var serializer = new JsonSerializer();
+                    while (jsonReader.Read())
+                    {
+                        if (jsonReader.TokenType == JsonToken.StartObject)
+                        {
+                            dynamic notificationResponse = serializer.Deserialize<object>(jsonReader);
+                            
+                            // This is an example of how to filter notifications based on the operation
+                            // If you are interested in a specific operation, you can filter the notifications here
+                            // You may also need to create a class to build the operation object
+                            if (notificationResponse.Operation == "CopilotInteraction")
+                            {
+                                // Process the filtered notification
+                                var copilotEventData = new AuditData
+                                {
+                                    UserId = notificationResponse.UserId,
+                                    CopilotEventData = new CopilotEventData
+                                    {
+                                        AppHost = notificationResponse.CopilotEventData.AppHost,
+                                        Contexts = notificationResponse.CopilotEventData.Contexts.ToObject<List<Context>>(),
+                                        AISystemPlugin = notificationResponse.CopilotEventData.AISystemPlugin.ToObject<List<AISystemPlugin>>(),
+                                    },
+                                    CreationTime = notificationResponse.CreationTime,
+                                    Id = notificationResponse.Id
+                                };
+
+                                _logger.LogInformation($"CopilotInteraction Obtained");
+                                copilotInteractions.Add(copilotEventData);
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            // Log the number of notifications processed
+            _logger.LogInformation($"Processed {notifications.Count} notifications.");
+            _logger.LogInformation($"Found {copilotInteractions.Count} CopilotInteractions.");
+
+            return copilotInteractions;
+        }
+    
+         public async Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications)
         {
             if (string.IsNullOrEmpty(_accessToken))
             {
@@ -219,17 +289,6 @@ namespace groveale.Services
                             // You may also need to create a class to build the operation object
                             if (notificationResponse.Operation == "CopilotInteraction")
                             {
-                                // Process the filtered notification
-                                // var listObj = new ListAuditObj
-                                // {
-                                //     AuditLogId = notificationResponse.Id,
-                                //     ListName = notificationResponse.ListName,
-                                //     ListUrl = notificationResponse.ListUrl,
-                                //     ObjectId = notificationResponse.ObjectId,
-                                //     ListBaseTemplateType = notificationResponse.ListBaseTemplateType,
-                                //     ListBaseType = notificationResponse.ListBaseType,
-                                //     CreationTime = notificationResponse.CreationTime
-                                // };
                                 
 
                                 _logger.LogInformation($"CopilotInteraction Obtained");
@@ -243,11 +302,12 @@ namespace groveale.Services
 
             // Log the number of notifications processed
             _logger.LogInformation($"Processed {notifications.Count} notifications.");
-            _logger.LogInformation($"Found {copilotInteractions.Count} new lists.");
+            _logger.LogInformation($"Found {copilotInteractions.Count} CopilotInteractions.");
 
             return copilotInteractions;
         }
     
+
         public async Task<List<ListAuditObj>> GetListCreatedNotificationsAsync(List<NotificationResponse> notifications)
         {
             if (string.IsNullOrEmpty(_accessToken))
@@ -321,7 +381,7 @@ namespace groveale.Services
                 await AuthenticateAsync();
             }
 
-            var url = $"https://manage.office.com/api/v1.0/{_settingsService.TenantId}/activity/feed//subscriptions/content?contentType={configuredContentType}&PublisherIdentifier={_settingsService.TenantId}";
+            var url = $"https://manage.office.com/api/v1.0/{_settingsService.TenantId}/activity/feed/subscriptions/content?contentType={configuredContentType}&PublisherIdentifier={_settingsService.TenantId}";
             var response = await _httpClient.GetAsync(url);
 
             try

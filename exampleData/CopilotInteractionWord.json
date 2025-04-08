@@ -1,0 +1,33 @@
+{
+  "CreationTime": "2025-04-08T12:04:58",
+  "Id": "3078fdcf-a057-4982-be5b-99a68fa5afc3",
+  "Operation": "CopilotInteraction",
+  "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+  "RecordType": 261,
+  "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+  "UserType": 0,
+  "Version": 1,
+  "Workload": "Copilot",
+  "ClientIP": "20.107.5.167",
+  "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+  "ClientRegion": "",
+  "CopilotEventData": {
+    "AISystemPlugin": [],
+    "AccessedResources": [],
+    "AppHost": "Word",
+    "Contexts": [
+      {
+        "Id": "https://m365cpi77517573-my.sharepoint.com/personal/admin_m365cpi77517573_onmicrosoft_com/_layouts/15/Doc.aspx?sourcedoc=%7B97BF07F1-00F2-4C58-83EF-0729952FC9AD%7D&file=Document%204.docx&action=default&mobileredirect=true",
+        "Type": "docx"
+      }
+    ],
+    "MessageIds": [],
+    "Messages": [
+      { "Id": "1744113898293", "isPrompt": true },
+      { "Id": "1744113898602", "isPrompt": false }
+    ],
+    "ModelTransparencyDetails": [],
+    "ThreadId": "19:iAfZrsT4M1gjrTfqq5ZR_2wiRfdretSe10wKtuBuduE1@thread.v2"
+  },
+  "CopilotLogVersion": "1.0.0.0"
+}
