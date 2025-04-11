@@ -13,6 +13,7 @@ namespace groveale.Services
         Task AddListCreationRecordAsync(ListAuditObj entity);
         Task AddCopilotInteractionRAWAysnc(dynamic entity);
         Task AddCopilotInteractionDetailsAsync(AuditData entity);
+        Task AddCopilotInteractionDailyAggregationForUserAsync(List<CopilotEventData> entity, string userId);
         Task LogWebhookTriggerAsync(LogEvent webhookEvent);
     }
 
@@ -22,7 +23,9 @@ namespace groveale.Services
         private readonly string _listCreationTable = "ListCreationEvents";
         private readonly string _copilotInteractionTable = "RAWCopilotInteractions";
         private readonly string _copilotInteractionDetailsTable = "CopilotInteractionDetails";
+        private readonly string _copilotInteractionDailyAggregationForUserTable = "CopilotInteractionDailyAggregationByUser";
         private readonly TableClient copilotInteractionDetailsTableClient;
+        private readonly TableClient copilotInteractionDailyAggregationsTableClient;
         private readonly string _webhookEventsTable = "WebhookTriggerEvents";
 
         private readonly ILogger<AzureTableService> _logger;
@@ -37,6 +40,9 @@ namespace groveale.Services
 
             copilotInteractionDetailsTableClient = _serviceClient.GetTableClient(_copilotInteractionDetailsTable);
             copilotInteractionDetailsTableClient.CreateIfNotExists();
+
+            copilotInteractionDailyAggregationsTableClient = _serviceClient.GetTableClient(_copilotInteractionDailyAggregationForUserTable);
+            copilotInteractionDailyAggregationsTableClient.CreateIfNotExists();
         }
 
         public async Task AddCopilotInteractionRAWAysnc(dynamic entity)
@@ -69,7 +75,7 @@ namespace groveale.Services
             }
         }
 
-         public async Task AddCopilotInteractionDetailsAsync (AuditData copilotInteraction)
+        public async Task AddCopilotInteractionDetailsAsync (AuditData copilotInteraction)
         {
             
 
@@ -94,6 +100,8 @@ namespace groveale.Services
             // Example: Some examples of supported apps and services include M365 Office (docx, pptx, xlsx), TeamsMeeting, TeamsChannel, and TeamsChat. If Copilot is used in Excel, then context will be the identifier of the Excel Spreadsheet and the file type.
             string contextsTypes = string.Join(", ", copilotInteraction.CopilotEventData.Contexts.Select(context => context.Type));
         
+            // Extract the AI plugin, understand if web plugin was used
+            string aiPlugin = string.Join(", ", copilotInteraction.CopilotEventData.AISystemPlugin.Select(plugin => plugin.Id));
 
             DateTime eventTime = DateTime.SpecifyKind(copilotInteraction.CreationTime, DateTimeKind.Utc);
             var tableEntity = new TableEntity(eventTime.ToString("yyyy-MM-dd"), copilotInteraction.Id.ToString())
@@ -101,7 +109,8 @@ namespace groveale.Services
                 { "User", copilotInteraction.UserId },
                 { "AppHost", copilotInteraction.CopilotEventData.AppHost },
                 { "CreationTime", eventTime },
-                { "Contexts", contextsTypes }
+                { "Contexts", contextsTypes },
+                { "AISystemPlugin", aiPlugin }
             };
 
             
@@ -123,7 +132,93 @@ namespace groveale.Services
             }
         }
 
+        public async Task AddCopilotInteractionDailyAggregationForUserAsync(List<CopilotEventData> entity, string userId)
+        {
+            // group the event data via appHost
+            var wordInteractions = entity.Where(e => e.AppHost == "Word").Count();
+            var excelInteractions = entity.Where(e => e.AppHost == "Excel").Count();
+            var powerPointInteractions = entity.Where(e => e.AppHost == "PowerPoint").Count();
+            var onenoteInteractions = entity.Where(e => e.AppHost == "OneNote").Count();
+            var outlookInteractions = entity.Where(e => e.AppHost == "Outlook").Count(); 
+            var loopInteractions = entity.Where(e => e.AppHost == "Loop").Count();
+            var teamsInteractions = entity.Where(e => e.AppHost == "Teams" && e.Contexts.Any(c => c.Type.StartsWith("Teams"))).Count();
+            var copilotChat = entity.Where(e => e.AppHost == "Office"
+                || e.AppHost == "Edge" 
+                ||  (e.AppHost == "Teams" && e.Contexts.Any(c => string.IsNullOrEmpty(c.Type))))
+                .Count();
+            var designerInteractions = entity.Where(e => e.AppHost == "Designer").Count();
+            var sharePointInteractions = entity.Where(e => e.AppHost == "SharePoint").Count();
+            var adminCenterInteractions = entity.Where(e => e.AppHost == "M365AdminCenter").Count();
+            var webPluginInteractions = entity.Where(e => e.AISystemPlugin.Any(p => p.Id == "BingWebSearch")).Count();
+            var copilotAction = entity.Where(e => e.AppHost == "OAIAutomationAgent").Count();
 
+            var totalInteractions = entity.Count();
+
+
+            // Ensure the creationTime is specified as UTC
+            DateTime eventTime = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+           
+
+            // Attempt to retrieve existing entity
+            try 
+            {
+                var retrieveOperation = await copilotInteractionDailyAggregationsTableClient.GetEntityIfExistsAsync<TableEntity>(eventTime.ToString("yyyy-MM-dd"), userId);
+                if (retrieveOperation.HasValue)
+                {
+                    var existingEntity = retrieveOperation.Value;
+                    // Update existing entity
+                    existingEntity["TotalCount"] = (int)existingEntity["TotalCount"] + totalInteractions;
+                    existingEntity["WordInteractions"] = (int)existingEntity["WordInteractions"] + wordInteractions;
+                    existingEntity["ExcelInteractions"] = (int)existingEntity["ExcelInteractions"] + excelInteractions;
+                    existingEntity["PowerPointInteractions"] = (int)existingEntity["PowerPointInteractions"] + powerPointInteractions;
+                    existingEntity["OneNoteInteractions"] = (int)existingEntity["OneNoteInteractions"] + onenoteInteractions;
+                    existingEntity["OutlookInteractions"] = (int)existingEntity["OutlookInteractions"] + outlookInteractions;
+                    existingEntity["LoopInteractions"] = (int)existingEntity["LoopInteractions"] + loopInteractions;
+                    existingEntity["TeamsInteractions"] = (int)existingEntity["TeamsInteractions"] + teamsInteractions;
+                    existingEntity["CopilotChat"] = (int)existingEntity["CopilotChat"] + copilotChat;
+                    existingEntity["DesignerInteractions"] = (int)existingEntity["DesignerInteractions"] + designerInteractions;
+                    existingEntity["SharePointInteractions"] = (int)existingEntity["SharePointInteractions"] + sharePointInteractions;
+                    existingEntity["AdminCenterInteractions"] = (int)existingEntity["AdminCenterInteractions"] + adminCenterInteractions;
+                    existingEntity["WebPluginInteractions"] = (int)existingEntity["WebPluginInteractions"] + webPluginInteractions;
+                    existingEntity["CopilotAction"] = (int)existingEntity["CopilotAction"] + copilotAction;
+
+
+                    // Update the entity
+                    await copilotInteractionDailyAggregationsTableClient.UpdateEntityAsync(existingEntity, ETag.All, TableUpdateMode.Merge);
+                    _logger.LogInformation($"Updated copilot interaction daily aggregation for user {userId} at {eventTime}");
+                }
+                else
+                {
+                    // Entity doesn't exist, create a new one
+                    var tableEntity = new TableEntity(eventTime.ToString("yyyy-MM-dd"), userId)
+                    {
+                        { "TotalCount", entity.Count },
+                        { "WordInteractions", wordInteractions },
+                        { "ExcelInteractions", excelInteractions },
+                        { "PowerPointInteractions", powerPointInteractions },
+                        { "OneNoteInteractions", onenoteInteractions },
+                        { "OutlookInteractions", outlookInteractions },
+                        { "LoopInteractions", loopInteractions },
+                        { "TeamsInteractions", teamsInteractions },
+                        { "CopilotChat", copilotChat },
+                        { "DesignerInteractions", designerInteractions },
+                        { "SharePointInteractions", sharePointInteractions },
+                        { "AdminCenterInteractions", adminCenterInteractions },
+                        { "WebPluginInteractions", webPluginInteractions },
+                        { "CopilotAction", copilotAction }
+                    };
+
+                    // Add the new entity
+                    await copilotInteractionDailyAggregationsTableClient.AddEntityAsync(tableEntity);
+                }
+            }
+            catch (RequestFailedException ex)
+            {
+                // Handle the exception as needed
+                _logger.LogError(ex, "Error retrieving copilot interaction daily aggregation event from table storage.");
+                throw;
+            }
+        }
 
         public async Task AddListCreationRecordAsync(ListAuditObj listCreationEvent)
         {

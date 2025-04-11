@@ -35,19 +35,45 @@ namespace groveale
 
             try
             {
-                var notificationResponses = await _m365ActivityService.GetAvailableNotificationsAsync(contentType);
+                var notifications = await _m365ActivityService.GetAvailableNotificationsAsync(contentType);
 
-                // process the response
-                //var newLists = await _m365ActivityService.GetListCreatedNotificationsAsync(notificationResponses);
-                var newCopilotInteractions = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notificationResponses);
+                // Get copilot audit records
+                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications);
+                var RAWCopilotInteractions = await _m365ActivityService.GetCopilotActivityNotificationsRAWAsync(notifications);
 
-                // // store the new lists in the table
-                foreach (var interaction in newCopilotInteractions)
+                // store the new lists in the table
+                foreach (var interaction in copilotAuditRecords)
                 {
                     await _azureTableService.AddCopilotInteractionDetailsAsync(interaction);
                 }
 
-                return new OkObjectResult(newCopilotInteractions);
+                // store the raw copilot interactions in the table
+                foreach (var interaction in RAWCopilotInteractions)
+                {
+                    await _azureTableService.AddCopilotInteractionRAWAysnc(interaction);
+                }
+
+                
+                // Group the copilot audit records by user and extract the CopilotEventData
+                var groupedCopilotEventData = copilotAuditRecords
+                    .GroupBy(record => record.UserId)
+                    .ToDictionary(
+                        group => group.Key, 
+                        group => group.Select(record => record.CopilotEventData).ToList()
+                    );
+                
+
+                // Log or process the grouped data as needed
+                foreach (var userId in groupedCopilotEventData.Keys)
+                {
+                    _logger.LogInformation($"UserId: {userId}");
+
+                    await _azureTableService.AddCopilotInteractionDailyAggregationForUserAsync(groupedCopilotEventData[userId], userId);
+
+                    _logger.LogInformation($"Process events for UserId: {userId}");
+                }
+
+                return new OkObjectResult("Done");
             }
             catch (Exception ex)
             {

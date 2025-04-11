@@ -1,0 +1,28 @@
+{
+  "CreationTime": "2025-04-11T04:00:13",
+  "Id": "2756db98-1f72-42c6-ab64-c84d2b519bd1",
+  "Operation": "CopilotInteraction",
+  "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+  "RecordType": 261,
+  "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+  "UserType": 0,
+  "Version": 1,
+  "Workload": "Copilot",
+  "ClientIP": "20.88.153.198",
+  "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+  "ClientRegion": "us",
+  "CopilotEventData": {
+    "AISystemPlugin": [],
+    "AccessedResources": [],
+    "AppHost": "OAIAutomationAgent",
+    "Contexts": [],
+    "MessageIds": [],
+    "Messages": [
+      { "Id": "1744344012513", "isPrompt": true },
+      { "Id": "1744344012876", "isPrompt": false }
+    ],
+    "ModelTransparencyDetails": [{ "ModelName": "DEEP_LEO" }],
+    "ThreadId": "19:apgn-irvAyHPM4Bflg3jzvhU6tNltb6p2T39KRUdgUo1@thread.v2"
+  },
+  "CopilotLogVersion": "1.0.0.0"
+}
