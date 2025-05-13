@@ -12,12 +12,16 @@ namespace groveale
         private readonly IM365ActivityService _m365ActivityService;
 
         private readonly IAzureTableService _azureTableService;
+        private readonly IKeyVaultService _keyVaultService;
+        private readonly ISettingsService _settingsService;
 
-        public GetNotifications(ILogger<GetNotifications> logger, IM365ActivityService m365ActivityService, IAzureTableService azureTableService)
+        public GetNotifications(ILogger<GetNotifications> logger, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService, ISettingsService settingsService)
         {
             _logger = logger;
             _m365ActivityService = m365ActivityService;
             _azureTableService = azureTableService;
+            _keyVaultService = keyVaultService;
+            _settingsService = settingsService;
         }
 
         [Function("GetNotifications")]
@@ -37,8 +41,24 @@ namespace groveale
             {
                 var notifications = await _m365ActivityService.GetAvailableNotificationsAsync(contentType);
 
+                if (notifications == null || notifications.Count == 0)
+                {
+                    _logger.LogInformation("No notifications found.");
+                    return new OkObjectResult("No notifications found.");
+                }
+                _logger.LogInformation($"Found {notifications.Count} notifications.");
+
+                // Create the EncryptionService
+                 _logger.LogInformation("Attempting to create EncryptionService");
+                var encryptionService = await DeterministicEncryptionService.CreateAsync(_settingsService, _keyVaultService);
+                 _logger.LogInformation("Encryption Service created");
+
+                // log an encryption test
+                var test = encryptionService.Encrypt("test");
+                _logger.LogInformation("Encryption Test: {Test}", test);
+
                 // Get copilot audit records
-                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications);
+                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService);
                 var RAWCopilotInteractions = await _m365ActivityService.GetCopilotActivityNotificationsRAWAsync(notifications);
 
                 // store the new lists in the table
@@ -61,6 +81,9 @@ namespace groveale
                         group => group.Key, 
                         group => group.Select(record => record.CopilotEventData).ToList()
                     );
+
+                // log the grouped data
+                _logger.LogInformation($"Found data for: {groupedCopilotEventData.Count} users");
                 
 
                 // Log or process the grouped data as needed
@@ -77,7 +100,7 @@ namespace groveale
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting notifications.");
+                _logger.LogError(ex, "Error getting notifications. Message: {Message}", ex.Message);
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }

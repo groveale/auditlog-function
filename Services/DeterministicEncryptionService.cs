@@ -4,7 +4,7 @@ using System.Text;
 
 namespace groveale.Services
 {
-    public interface IDeterministicEncryptionService 
+    public interface IDeterministicEncryptionService
     {
         string Encrypt(string plainText);
         string Decrypt(string base64Encrypted);
@@ -39,7 +39,13 @@ namespace groveale.Services
             byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
             byte[] encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
 
-            return Convert.ToBase64String(encryptedBytes);
+
+
+            // Convert to URL-safe Base64
+            return Convert.ToBase64String(encryptedBytes)
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .TrimEnd('=');
         }
 
         public string Decrypt(string base64Encrypted)
@@ -51,6 +57,19 @@ namespace groveale.Services
             aes.Padding = PaddingMode.PKCS7;
 
             using var decryptor = aes.CreateDecryptor();
+
+            // Convert URL-safe Base64 back to standard Base64
+            string standardBase64 = base64Encrypted
+                .Replace("-", "+")
+                .Replace("_", "/");
+
+            // Add padding if necessary
+            switch (standardBase64.Length % 4)
+            {
+                case 2: standardBase64 += "=="; break;
+                case 3: standardBase64 += "="; break;
+            }
+
             byte[] encryptedBytes = Convert.FromBase64String(base64Encrypted);
             byte[] decryptedBytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
 

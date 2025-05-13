@@ -95,10 +95,15 @@ namespace groveale.Services
             // Extract types from the Contexts list and join them as a comma-separated string
             // AppChat will have a context type of rhe name of the app or service within context
             // Example: Some examples of supported apps and services include M365 Office (docx, pptx, xlsx), TeamsMeeting, TeamsChannel, and TeamsChat. If Copilot is used in Excel, then context will be the identifier of the Excel Spreadsheet and the file type.
-            string contextsTypes = string.Join(", ", copilotInteraction.CopilotEventData.Contexts.Select(context => context.Type));
-        
-            // Extract the AI plugin, understand if web plugin was used
-            string aiPlugin = string.Join(", ", copilotInteraction.CopilotEventData.AISystemPlugin.Select(plugin => plugin.Id));
+            // Check if Contexts is non-null before accessing it
+            string contextsTypes = copilotInteraction.CopilotEventData.Contexts != null
+                ? string.Join(", ", copilotInteraction.CopilotEventData.Contexts.Select(context => context.Type))
+                : string.Empty;
+
+            // Check if AISystemPlugin is non-null before accessing it
+            string aiPlugin = copilotInteraction.CopilotEventData.AISystemPlugin != null
+                ? string.Join(", ", copilotInteraction.CopilotEventData.AISystemPlugin.Select(plugin => plugin.Id))
+                : string.Empty;
 
             DateTime eventTime = DateTime.SpecifyKind(copilotInteraction.CreationTime, DateTimeKind.Utc);
             var tableEntity = new TableEntity(eventTime.ToString("yyyy-MM-dd"), copilotInteraction.Id.ToString())
@@ -138,16 +143,22 @@ namespace groveale.Services
             var onenoteInteractions = entity.Where(e => e.AppHost == "OneNote").Count();
             var outlookInteractions = entity.Where(e => e.AppHost == "Outlook").Count(); 
             var loopInteractions = entity.Where(e => e.AppHost == "Loop").Count();
-            var teamsInteractions = entity.Where(e => e.AppHost == "Teams" && e.Contexts.Any(c => c.Type.StartsWith("Teams"))).Count();
-            var copilotChat = entity.Where(e => e.AppHost == "Office"
-                || e.AppHost == "Edge" 
-                ||  (e.AppHost == "Teams" && e.Contexts.Any(c => string.IsNullOrEmpty(c.Type))))
+            var teamsInteractions = entity
+                .Where(e => e.AppHost == "Teams" && e.Contexts != null && e.Contexts.Any(c => c.Type.StartsWith("Teams")))
+                .Count();
+            var copilotChat = entity
+                .Where(e => e.AppHost == "Office"
+                    || e.AppHost == "Edge"
+                    || (e.AppHost == "Teams" && e.Contexts != null && e.Contexts.Any(c => string.IsNullOrEmpty(c.Type))))
                 .Count();
             var designerInteractions = entity.Where(e => e.AppHost == "Designer").Count();
             var sharePointInteractions = entity.Where(e => e.AppHost == "SharePoint").Count();
             var adminCenterInteractions = entity.Where(e => e.AppHost == "M365AdminCenter").Count();
-            var webPluginInteractions = entity.Where(e => e.AISystemPlugin.Any(p => p.Id == "BingWebSearch")).Count();
+            var webPluginInteractions = entity
+                .Where(e => e.AISystemPlugin != null && e.AISystemPlugin.Any(p => p.Id == "BingWebSearch"))
+                .Count();
             var copilotAction = entity.Where(e => e.AppHost == "OAIAutomationAgent").Count();
+            var copilotStudioInteractions = entity.Where(e => e.AppHost == "Copilot Studio").Count();
 
             var totalInteractions = entity.Count();
 
@@ -178,6 +189,7 @@ namespace groveale.Services
                     existingEntity["AdminCenterInteractions"] = (int)existingEntity["AdminCenterInteractions"] + adminCenterInteractions;
                     existingEntity["WebPluginInteractions"] = (int)existingEntity["WebPluginInteractions"] + webPluginInteractions;
                     existingEntity["CopilotAction"] = (int)existingEntity["CopilotAction"] + copilotAction;
+                    existingEntity["CopilotStudioInteractions"] = (int)existingEntity["CopilotStudioInteractions"] + copilotStudioInteractions;
 
 
                     // Update the entity
@@ -202,7 +214,8 @@ namespace groveale.Services
                         { "SharePointInteractions", sharePointInteractions },
                         { "AdminCenterInteractions", adminCenterInteractions },
                         { "WebPluginInteractions", webPluginInteractions },
-                        { "CopilotAction", copilotAction }
+                        { "CopilotAction", copilotAction },
+                        { "CopilotStudioInteractions", copilotStudioInteractions }
                     };
 
                     // Add the new entity

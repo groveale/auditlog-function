@@ -222,22 +222,32 @@ namespace groveale.Services
                             // You may also need to create a class to build the operation object
                             if (notificationResponse.Operation == "CopilotInteraction")
                             {
-                                // Process the filtered notification
-                                var copilotEventData = new AuditData
-                                {
-                                    UserId = encryptionService.Encrypt(notificationResponse.UserId),
-                                    CopilotEventData = new CopilotEventData
-                                    {
-                                        AppHost = notificationResponse.CopilotEventData.AppHost,
-                                        Contexts = notificationResponse.CopilotEventData.Contexts.ToObject<List<Context>>(),
-                                        AISystemPlugin = notificationResponse.CopilotEventData.AISystemPlugin.ToObject<List<AISystemPlugin>>(),
-                                    },
-                                    CreationTime = notificationResponse.CreationTime,
-                                    Id = notificationResponse.Id
-                                };
 
-                                _logger.LogInformation($"CopilotInteraction Obtained");
-                                copilotInteractions.Add(copilotEventData);
+
+                                try
+                                {
+                                    // Process the filtered notification
+                                    var copilotEventData = new AuditData
+                                    {
+                                        UserId = encryptionService.Encrypt(notificationResponse.UserId.ToString()),
+                                        CopilotEventData = new CopilotEventData
+                                        {
+                                            AppHost = notificationResponse.CopilotEventData.AppHost,
+                                            Contexts = notificationResponse.CopilotEventData?.Contexts?.ToObject<List<Context>>(),
+                                            AISystemPlugin = notificationResponse.CopilotEventData?.AISystemPlugin?.ToObject<List<AISystemPlugin>>(),
+                                        },
+                                        CreationTime = notificationResponse.CreationTime,
+                                        Id = notificationResponse.Id
+                                    };
+
+                                    _logger.LogInformation($"CopilotInteraction Obtained");                 
+
+                                    copilotInteractions.Add(copilotEventData);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError($"Error obtaining event: {notificationResponse}");
+                                }
                             }
                         }
                     }
