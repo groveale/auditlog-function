@@ -73,7 +73,7 @@ namespace groveale
                     _logger.LogInformation($"Process events for UserId: {userId}");
                 }
 
-                return new OkObjectResult("Done");
+                return new OkObjectResult(groupedCopilotEventData);
             }
             catch (Exception ex)
             {

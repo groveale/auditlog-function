@@ -15,13 +15,15 @@ namespace groveale
         private readonly ISettingsService _settingsService;
         private readonly IM365ActivityService _m365ActivityService;
         private readonly IAzureTableService _azureTableService; 
+        private readonly IKeyVaultService _keyVaultService;
 
-        public ReceiveEvents(ILogger<ReceiveEvents> logger, ISettingsService settingsService, IM365ActivityService m365ActivityService, IAzureTableService azureTableService)
+        public ReceiveEvents(ILogger<ReceiveEvents> logger, ISettingsService settingsService, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService)
         {
             _logger = logger;
             _settingsService = settingsService;
             _m365ActivityService = m365ActivityService;
             _azureTableService = azureTableService;
+            _keyVaultService = keyVaultService;
 
         }
 
@@ -102,9 +104,17 @@ namespace groveale
                 // process the response
                 //var newLists = await _m365ActivityService.GetListCreatedNotificationsAsync(notifications);
 
+                // Create the EncyptionService
+                // Encrypt the upn, data added to the tables will be encrypted
+                var encryptionService = await DeterministicEncryptionService.CreateAsync(_settingsService, _keyVaultService);
+
                 // Get copilot audit records
-                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications);
+                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService);
+
+                // TODO remove this for prod
+                 
                 var RAWCopilotInteractions = await _m365ActivityService.GetCopilotActivityNotificationsRAWAsync(notifications);
+
 
                 // store the new lists in the table
                 foreach (var interaction in copilotAuditRecords)

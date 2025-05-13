@@ -20,7 +20,7 @@ namespace groveale.Services
         Task<string> StopSubscriptionAsync(string configuredContentType);
 
         Task<List<ListAuditObj>> GetListCreatedNotificationsAsync(List<NotificationResponse> notifications);
-        Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications);
+        Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService);
 
         Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications);
 
@@ -185,7 +185,7 @@ namespace groveale.Services
             }
         }
 
-         public async Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications)
+        public async Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService)
         {
             if (string.IsNullOrEmpty(_accessToken))
             {
@@ -225,7 +225,7 @@ namespace groveale.Services
                                 // Process the filtered notification
                                 var copilotEventData = new AuditData
                                 {
-                                    UserId = notificationResponse.UserId,
+                                    UserId = encryptionService.Encrypt(notificationResponse.UserId),
                                     CopilotEventData = new CopilotEventData
                                     {
                                         AppHost = notificationResponse.CopilotEventData.AppHost,

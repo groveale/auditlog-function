@@ -2,6 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using groveale.Services;
+using groveale;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -20,6 +21,9 @@ var host = new HostBuilder()
 
         // Register the AzureTableService
         services.AddSingleton<IAzureTableService, AzureTableService>();
+
+        // Register the KeyVaultService
+        services.AddSingleton<IKeyVaultService, KeyVaultService>();
 
     })
     .Build();

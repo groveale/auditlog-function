@@ -1,0 +1,47 @@
+{
+    "AgentId": "T_6cf8d39b-1ac5-8cd7-faf4-b3b641374848.86b95ea5-187a-41af-9ed2-8fa1c6f52db7",
+    "AgentName": "SNOW Tickets",
+    "CreationTime": "2025-05-07T09:13:38",
+    "Id": "d6ddc93e-4637-438b-9ee4-227d46ad1fe7",
+    "Operation": "CopilotInteraction",
+    "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+    "RecordType": 261,
+    "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Copilot",
+    "ClientIP": "",
+    "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+    "ClientRegion": "us",
+    "CopilotEventData": {
+        "AISystemPlugin": [],
+        "AccessedResources": [
+            {
+                "Action": "Read",
+                "PolicyDetails": "",
+                "SiteUrl": "https://dev184580.service-now.com/sp?sys_id=d71b3b41c0a8016700a8ef040791e72a&view=sp&id=ticket&table=incident",
+                "Type": "External"
+            }
+        ],
+        "AppHost": "Office",
+        "Contexts": [],
+        "MessageIds": [],
+        "Messages": [
+            {
+                "Id": "1746609217759",
+                "isPrompt": true
+            },
+            {
+                "Id": "1746609217957",
+                "isPrompt": false
+            }
+        ],
+        "ModelTransparencyDetails": [
+            {
+                "ModelName": "DEEP_LEO"
+            }
+        ],
+        "ThreadId": "19:w2dI4tGnzsC3dVXHbdiLZiMSZTct-lxrZMsAB29SNFc1@thread.v2"
+    },
+    "CopilotLogVersion": "1.0.0.0"
+}

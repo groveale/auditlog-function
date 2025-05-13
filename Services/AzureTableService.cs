@@ -78,9 +78,6 @@ namespace groveale.Services
         public async Task AddCopilotInteractionDetailsAsync (AuditData copilotInteraction)
         {
             
-
-    
-
             // Get values with null checks
             // string userId = copilotInteraction["UserId"]?.ToString() ?? "unknown";
             // string appHostFromDict = copilotInteraction["CopilotEventData"]?["AppHost"]?.ToString() ?? "unknown";

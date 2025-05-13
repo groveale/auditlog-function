@@ -10,6 +10,8 @@ namespace groveale.Services
         string StorageAccountUri { get; }
         string StorageAccountName { get; }
         string StorageAccountKey { get; }
+        string KeyVaultUrl { get; }
+        string KeyVaultEncryptionKeySecretName { get; }
         
     }
 
@@ -24,6 +26,8 @@ namespace groveale.Services
         public string StorageAccountUri => Environment.GetEnvironmentVariable("StorageAccountUri");
         public string StorageAccountName => Environment.GetEnvironmentVariable("StorageAccountName");
         public string StorageAccountKey => Environment.GetEnvironmentVariable("StorageAccountKey");
+        public string KeyVaultUrl => Environment.GetEnvironmentVariable("KeyVault:Url");
+        public string KeyVaultEncryptionKeySecretName => Environment.GetEnvironmentVariable("KeyVault:EncryptionKeySecretName");
 
     }
 }
