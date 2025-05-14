@@ -1,0 +1,40 @@
+{
+    "AgentId": "CopilotStudio.Declarative.T_6cf8d39b-1ac5-8cd7-faf4-b3b641374848.86b95ea5-187a-41af-9ed2-8fa1c6f52db7",
+    "AgentName": "SNOW Tickets",
+    "CreationTime": "2025-05-14T09:50:51",
+    "Id": "b96382db-22f5-43d3-bebe-8bf4c7428b62",
+    "Operation": "CopilotInteraction",
+    "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+    "RecordType": 261,
+    "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Copilot",
+    "ClientIP": "",
+    "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+    "ClientRegion": "us",
+    "CopilotEventData": {
+        "AISystemPlugin": [],
+        "AccessedResources": [],
+        "AppHost": "Office",
+        "Contexts": [],
+        "MessageIds": [],
+        "Messages": [
+            {
+                "Id": "1747216251119",
+                "isPrompt": true
+            },
+            {
+                "Id": "1747216251443",
+                "isPrompt": false
+            }
+        ],
+        "ModelTransparencyDetails": [
+            {
+                "ModelName": "DEEP_LEO"
+            }
+        ],
+        "ThreadId": "19:xELWPmSWe3krUe9l8eBYB5GudXH_kauoSfExvI7FaNg1@thread.v2"
+    },
+    "CopilotLogVersion": "1.0.0.0"
+}

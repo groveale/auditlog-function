@@ -93,7 +93,7 @@ namespace groveale
 
                     await _azureTableService.AddCopilotInteractionDailyAggregationForUserAsync(groupedCopilotEventData[userId], userId);
 
-                    _logger.LogInformation($"Process events for UserId: {userId}");
+                    _logger.LogInformation($"Process events for UserId: {encryptionService.Decrypt(userId)}");
                 }
 
                 return new OkObjectResult(groupedCopilotEventData);

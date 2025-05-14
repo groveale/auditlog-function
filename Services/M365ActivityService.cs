@@ -235,6 +235,8 @@ namespace groveale.Services
                                             AppHost = notificationResponse.CopilotEventData.AppHost,
                                             Contexts = notificationResponse.CopilotEventData?.Contexts?.ToObject<List<Context>>(),
                                             AISystemPlugin = notificationResponse.CopilotEventData?.AISystemPlugin?.ToObject<List<AISystemPlugin>>(),
+                                            AgentId = notificationResponse?.AgentId,
+                                            AgentName = notificationResponse?.AgentName
                                         },
                                         CreationTime = notificationResponse.CreationTime,
                                         Id = notificationResponse.Id

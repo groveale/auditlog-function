@@ -70,7 +70,7 @@ namespace groveale.Services
                 case 3: standardBase64 += "="; break;
             }
 
-            byte[] encryptedBytes = Convert.FromBase64String(base64Encrypted);
+            byte[] encryptedBytes = Convert.FromBase64String(standardBase64);
             byte[] decryptedBytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
 
             return Encoding.UTF8.GetString(decryptedBytes);

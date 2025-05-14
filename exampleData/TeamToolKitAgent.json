@@ -1,0 +1,51 @@
+{
+    "AgentId": "TeamsToolkit.Declarative.U_0e9b9114-8dea-76ca-525d-e4cbbf223035.declarativeAgent",
+    "AgentName": "Stock Master",
+    "CreationTime": "2025-05-14T09:29:22",
+    "Id": "4613132b-ce59-4b1e-8b17-fc01a3b571df",
+    "Operation": "CopilotInteraction",
+    "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+    "RecordType": 261,
+    "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Copilot",
+    "ClientIP": "",
+    "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+    "ClientRegion": "us",
+    "CopilotEventData": {
+        "AISystemPlugin": [],
+        "AccessedResources": [
+            {
+                "Action": "READ",
+                "SiteUrl": "https://ag-customer-api.azurewebsites.net/product/eol/fresh",
+                "Status": "Success",
+                "Type": "API"
+            },
+            {
+                "Action": "Read",
+                "PolicyDetails": ""
+            }
+        ],
+        "AppHost": "Office",
+        "Contexts": [],
+        "MessageIds": [],
+        "Messages": [
+            {
+                "Id": "1747214962149",
+                "isPrompt": true
+            },
+            {
+                "Id": "1747214962412",
+                "isPrompt": false
+            }
+        ],
+        "ModelTransparencyDetails": [
+            {
+                "ModelName": "DEEP_LEO"
+            }
+        ],
+        "ThreadId": "19:Yfk7USPnagOUN8Rxo9whx0A2y2jGfABJQQcrJifeeks1@thread.v2"
+    },
+    "CopilotLogVersion": "1.0.0.0"
+}

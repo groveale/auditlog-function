@@ -1,0 +1,27 @@
+{
+    "AppIdentity": "Copilot.Studio.Default-d8464949-bb1d-476f-bbe8-a46293833f6d-cr8a3_itHelpdesk",
+    "CreationTime": "2025-05-13T17:33:45",
+    "Id": "94487c1d-c970-4717-89d1-96b19384f7e9",
+    "Operation": "CopilotInteraction",
+    "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+    "RecordType": 261,
+    "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Copilot",
+    "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+    "ClientRegion": "prd",
+    "CopilotEventData": {
+        "AccessedResources": [],
+        "AppHost": "Copilot Studio",
+        "MessageIds": [],
+        "Messages": [
+            {
+                "Id": "1747157626001",
+                "isPrompt": false
+            }
+        ],
+        "ThreadId": "19:o5mYUgFXPTsl5mAfklTICZAxO_-vwdhQpT4z0czmlTo1@thread.v2"
+    },
+    "CopilotLogVersion": "1.0.0.0"
+}

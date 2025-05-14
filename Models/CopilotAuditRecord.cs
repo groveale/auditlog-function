@@ -29,6 +29,7 @@ namespace groveale
         public string ClientRegion { get; set; }
         public string UserId { get; set; }
         public CopilotEventData CopilotEventData { get; set; }
+        
     }
 
     public class CopilotEventData
@@ -41,6 +42,10 @@ namespace groveale
         public List<Message> Messages { get; set; } = new List<Message>();
         public List<ModelTransparencyDetail> ModelTransparencyDetails { get; set; } = new List<ModelTransparencyDetail>();
         public string ThreadId { get; set; }
+
+        // These are not truly on this object
+        public string? AgentId { get; set; }
+        public string? AgentName { get; set; }
     }
 
     public class AccessedResource
