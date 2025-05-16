@@ -46,6 +46,7 @@ namespace groveale
         // These are not truly on this object
         public string? AgentId { get; set; }
         public string? AgentName { get; set; }
+        public string? EventDateString { get; set; }
     }
 
     public class AccessedResource

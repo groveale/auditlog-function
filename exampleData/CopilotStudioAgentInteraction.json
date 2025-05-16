@@ -1,0 +1,34 @@
+{
+    "CreationTime": "2025-05-16T15:24:31",
+    "Id": "a837f7fc-71ba-426c-9923-d289d850923f",
+    "Operation": "CopilotInteraction",
+    "OrganizationId": "d8464949-bb1d-476f-bbe8-a46293833f6d",
+    "RecordType": 261,
+    "UserKey": "fa936341-b3df-4ea2-98db-66ce0f3fbdcd",
+    "UserType": 0,
+    "Version": 1,
+    "Workload": "Copilot",
+    "ClientIP": "",
+    "UserId": "admin@M365CPI77517573.onmicrosoft.com",
+    "ClientRegion": "us",
+    "CopilotEventData": {
+        "AISystemPlugin": [],
+        "AccessedResources": [],
+        "AppHost": "Office",
+        "Contexts": [],
+        "MessageIds": [],
+        "Messages": [
+            {
+                "Id": "1747409071631",
+                "isPrompt": true
+            },
+            {
+                "Id": "1747409071880",
+                "isPrompt": false
+            }
+        ],
+        "ModelTransparencyDetails": [],
+        "ThreadId": "19:S_2ja_Cbx67N8FNXDz8sjYd-KBFbmYwsGsiXe_C4XHI1@thread.v2"
+    },
+    "CopilotLogVersion": "1.0.0.0"
+}

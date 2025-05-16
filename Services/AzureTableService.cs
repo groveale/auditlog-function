@@ -14,6 +14,9 @@ namespace groveale.Services
         Task AddCopilotInteractionRAWAysnc(dynamic entity);
         Task AddCopilotInteractionDetailsAsync(AuditData entity);
         Task AddCopilotInteractionDailyAggregationForUserAsync(List<CopilotEventData> entity, string userId);
+        Task AddSingleCopilotInteractionDailyAggregationForUserAsync(CopilotEventData entity, string userId);
+        Task AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType appType, string userId, int count);
+        Task AddAgentInteractionsDailyAggregationForUserAsync(string agentId, string userId, int count, string agentName);
         Task LogWebhookTriggerAsync(LogEvent webhookEvent);
     }
 
@@ -23,9 +26,11 @@ namespace groveale.Services
         private readonly string _listCreationTable = "ListCreationEvents";
         private readonly string _copilotInteractionTable = "RAWCopilotInteractions";
         private readonly string _copilotInteractionDetailsTable = "CopilotInteractionDetails";
-        private readonly string _copilotInteractionDailyAggregationForUserTable = "CopilotInteractionDailyAggregationByUser";
+        private readonly string _copilotInteractionDailyAggregationForUserTable = "CopilotInteractionDailyAggregationByAppAndUser3";
+        private readonly string _agentInteractionDailyAggregationForUserTable = "AgentInteractionDailyAggregationByUserAndAgentId";
         private readonly TableClient copilotInteractionDetailsTableClient;
         private readonly TableClient copilotInteractionDailyAggregationsTableClient;
+        private readonly TableClient copilotAgentInteractionTableClient;
         private readonly string _webhookEventsTable = "WebhookTriggerEvents";
 
         private readonly ILogger<AzureTableService> _logger;
@@ -43,6 +48,9 @@ namespace groveale.Services
 
             copilotInteractionDailyAggregationsTableClient = _serviceClient.GetTableClient(_copilotInteractionDailyAggregationForUserTable);
             copilotInteractionDailyAggregationsTableClient.CreateIfNotExists();
+
+            copilotAgentInteractionTableClient = _serviceClient.GetTableClient(_agentInteractionDailyAggregationForUserTable);
+            copilotAgentInteractionTableClient.CreateIfNotExists();
         }
 
         public async Task AddCopilotInteractionRAWAysnc(dynamic entity)
@@ -136,12 +144,14 @@ namespace groveale.Services
             }
         }
 
+        /// <summary>
+        /// Adds a copilot interaction daily aggregation for a user.
+        /// NO longer used
+        /// </summary>
         public async Task AddCopilotInteractionDailyAggregationForUserAsync(List<CopilotEventData> entity, string userId)
         {
             try
             {
-
-
                 // group the event data via appHost
                 var wordInteractions = entity.Where(e => e.AppHost == "Word").Count();
                 var excelInteractions = entity.Where(e => e.AppHost == "Excel").Count();
@@ -240,7 +250,7 @@ namespace groveale.Services
                 _logger.LogError(ex, "Error retrieving copilot interaction daily aggregation event from table storage.");
                 _logger.LogError(ex, "Message: {Message}", ex.Message);
                 _logger.LogError(ex, "Status: {Status}", ex.StackTrace);
-                
+
             }
         }
 
@@ -319,5 +329,224 @@ namespace groveale.Services
                 throw;
             }
         }
+
+        public async Task AddSingleCopilotInteractionDailyAggregationForUserAsync(CopilotEventData entity, string userId)
+        {
+
+            var copilotUsage = new CopilotTimeFrameUsage
+            {
+                UPN = userId,
+                TotalInteractionCount = 1
+            };
+
+            // We need to set the app type based on the entity.AppHost and sometimes other logic
+            // For example, if the entity.AppHost is "Teams" and the context type is "TeamsMeeting", we set it to AppType.Teams
+            switch (entity.AppHost)
+            {
+                case "Word":
+                    // Handle Word interactions
+                    copilotUsage.App = AppType.Word;
+                    break;
+                case "Excel":
+                    // Handle Excel interactions
+                    copilotUsage.App = AppType.Excel;
+                    break;
+                case "PowerPoint":
+                    // Handle PowerPoint interactions
+                    copilotUsage.App = AppType.PowerPoint;
+                    break;
+                case "OneNote":
+                    // Handle OneNote interactions
+                    copilotUsage.App = AppType.OneNote;
+                    break;
+                case "Outlook":
+                    // Handle Outlook interactions
+                    copilotUsage.App = AppType.Outlook;
+                    break;
+                case "Loop":
+                    // Handle Loop interactions
+                    copilotUsage.App = AppType.Loop;
+                    break;
+                case "Whiteboard":
+                    // Handle Whiteboard interactions
+                    copilotUsage.App = AppType.Whiteboard;
+                    break;
+                case "Teams":
+                    // Handle Teams interactions
+                    if (entity.Contexts != null && entity.Contexts.Any(c => c.Type.StartsWith("Teams")))
+                    {
+                        copilotUsage.App = AppType.Teams;
+                    }
+                    else
+                    {
+                        copilotUsage.App = AppType.CopilotChat;
+                    }
+                    break;
+                case "Office":
+                    // Handle Office interactions
+                    if (entity.AgentId != null)
+                    {
+                        copilotUsage.App = AppType.CopilotChat;
+                    }
+                    else
+                    {
+                        copilotUsage.App = AppType.Agent;
+                    }
+                    break;
+                case "Edge":
+                    // Handle Edge interactions
+                    copilotUsage.App = AppType.CopilotChat;
+                    break;
+                case "Designer":
+                    // Handle Designer interactions
+                    copilotUsage.App = AppType.Designer;
+                    break;
+                case "SharePoint":
+                    // Handle SharePoint interactions
+                    copilotUsage.App = AppType.SharePoint;
+                    break;
+                case "M365AdminCenter":
+                    // Handle M365AdminCenter interactions
+                    copilotUsage.App = AppType.MAC;
+                    break;
+                case "OAIAutomationAgent":
+                    // Handle OAIAutomationAgent interactions
+                    copilotUsage.App = AppType.CopilotAction;
+                    break;
+                case "Copilot Studio":
+                    // Handle Copilot Studio interactions
+                    copilotUsage.App = AppType.CopilotStudio;
+                    break;
+                default:
+                    // Handle other cases or log an error
+                    // We have a new appHost to handle
+                    _logger.LogWarning($"Unhandled AppHost: {entity.AppHost}");
+                    // TODO write to a table
+                    break;
+            }
+
+            
+            var copilotUsageEntity = copilotUsage.ToDailyTableEntity(entity.EventDateString);
+            
+            // Add the entity to the table
+            await CreateOrUpdateCopilotUsageEntityAsync(copilotUsageEntity, copilotUsage.TotalInteractionCount);
+
+        }
+
+        public async Task AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType appType, string userId, int count)
+        {
+            var copilotUsage = new CopilotTimeFrameUsage
+            {
+                UPN = userId,
+                TotalInteractionCount = count,
+                App = appType
+            };
+
+            var copilotUsageEntity = copilotUsage.ToDailyTableEntity(DateTime.UtcNow.ToString("yyyy-MM-dd"));
+            // Add the entity to the table
+            await CreateOrUpdateCopilotUsageEntityAsync(copilotUsageEntity, copilotUsage.TotalInteractionCount);
+        }
+
+        private async Task CreateOrUpdateCopilotUsageEntityAsync(TableEntity copilotUsageEntity, int interactionCount)
+        {
+
+            try
+            {
+                var retrieveOperation = await copilotInteractionDailyAggregationsTableClient
+                    .GetEntityIfExistsAsync<CopilotTimeFrameUsage>(
+                        copilotUsageEntity.PartitionKey,
+                        copilotUsageEntity.RowKey);
+
+                if (retrieveOperation.HasValue)
+                {
+                    var existingEntity = retrieveOperation.Value;
+
+                    existingEntity.TotalInteractionCount += interactionCount;
+
+                    await copilotInteractionDailyAggregationsTableClient
+                        .UpdateEntityAsync(existingEntity, existingEntity.ETag, TableUpdateMode.Merge);
+                }
+                else
+                {
+                    await copilotInteractionDailyAggregationsTableClient
+                        .AddEntityAsync(copilotUsageEntity);
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 409)
+            {
+                // Entity was added by someone else just after our check
+                // Retry the update path
+                var newlyUpdatedEntity = await copilotInteractionDailyAggregationsTableClient
+                    .GetEntityAsync<CopilotTimeFrameUsage>(copilotUsageEntity.PartitionKey, copilotUsageEntity.RowKey);
+
+                newlyUpdatedEntity.Value.TotalInteractionCount += interactionCount;
+
+                await copilotInteractionDailyAggregationsTableClient
+                    .UpdateEntityAsync(newlyUpdatedEntity.Value, newlyUpdatedEntity.Value.ETag, TableUpdateMode.Merge);
+            }
+            catch (RequestFailedException ex)
+            {
+                _logger.LogError(ex, "Error retrieving or updating copilot interaction aggregation.");
+                _logger.LogError("Message: {Message}", ex.Message);
+                _logger.LogError("Status: {Status}", ex.Status);
+                _logger.LogError("StackTrace: {StackTrace}", ex.StackTrace);
+            }
+        }
+
+        public async Task AddAgentInteractionsDailyAggregationForUserAsync(string agentId, string userId, int count, string agentName)
+        {
+            var agentUsage = new AgentInteraction
+            {
+                UPN = userId,
+                TotalInteractionCount = count,
+                AgentId = agentId,
+                AgentName = agentName
+            };
+
+            var agentUsageEntity = agentUsage.ToDailyTableEntity(DateTime.UtcNow.ToString("yyyy-MM-dd"));
+
+            try
+            {
+                var retrieveOperation = await copilotAgentInteractionTableClient
+                    .GetEntityIfExistsAsync<AgentInteraction>(
+                        agentUsageEntity.PartitionKey,
+                        agentUsageEntity.RowKey);
+
+                if (retrieveOperation.HasValue)
+                {
+                    var existingEntity = retrieveOperation.Value;
+
+                    existingEntity.TotalInteractionCount += count;
+
+                    await copilotAgentInteractionTableClient
+                        .UpdateEntityAsync(existingEntity, existingEntity.ETag, TableUpdateMode.Merge);
+                }
+                else
+                {
+                    await copilotAgentInteractionTableClient
+                        .AddEntityAsync(agentUsageEntity);
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 409)
+            {
+                // Entity was added by someone else just after our check
+                // Retry the update path
+                var newlyUpdatedEntity = await copilotAgentInteractionTableClient
+                    .GetEntityAsync<CopilotTimeFrameUsage>(agentUsageEntity.PartitionKey, agentUsageEntity.RowKey);
+
+                newlyUpdatedEntity.Value.TotalInteractionCount += count;
+
+                await copilotAgentInteractionTableClient
+                    .UpdateEntityAsync(newlyUpdatedEntity.Value, newlyUpdatedEntity.Value.ETag, TableUpdateMode.Merge);
+            }
+            catch (RequestFailedException ex)
+            {
+                _logger.LogError(ex, "Error retrieving or updating agent interaction aggregation.");
+                _logger.LogError("Message: {Message}", ex.Message);
+                _logger.LogError("Status: {Status}", ex.Status);
+                _logger.LogError("StackTrace: {StackTrace}", ex.StackTrace);
+            }
+        }
+
     }
 }

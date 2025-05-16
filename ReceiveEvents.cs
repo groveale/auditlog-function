@@ -143,9 +143,53 @@ namespace groveale
                 {
                     _logger.LogInformation($"UserId: {userId}");
 
-                    await _azureTableService.AddCopilotInteractionDailyAggregationForUserAsync(groupedCopilotEventData[userId], userId);
-                }
+                    foreach (var copilotEventData in groupedCopilotEventData[userId])
+                    {
+
+                        await _azureTableService.AddSingleCopilotInteractionDailyAggregationForUserAsync(copilotEventData, userId);
+                    }
+
+                    // Add web plugin interactions to the table (AISystemPlugin == "BingWebSearch")
+                    var webPluginInteractions = groupedCopilotEventData[userId]
+                        .Where(data => data.AISystemPlugin.Any(plugin => plugin.Name == "BingWebSearch"))
+                        .ToList();
                 
+                    // If there are no web plugin interactions, skip this step
+                    if (webPluginInteractions.Count > 0)
+                    {
+                        // Add the web plugin interactions to the table
+                        await _azureTableService.AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType.WebPlugin, userId, webPluginInteractions.Count());
+                    }
+                    
+                    // Finally add the total copilot interaction for the user to the table
+                    await _azureTableService.AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType.All, userId, groupedCopilotEventData[userId].Count());
+
+                    // get record for agents
+                    var copilotAuditRecordsToAdd = groupedCopilotEventData[userId]
+                        .Where(record => !string.IsNullOrEmpty(record.AgentId))
+                        .ToList();
+                    
+                    // group by agentId
+                    var groupedCopilotAgentRecords = copilotAuditRecordsToAdd?
+                        .GroupBy(record => record.AgentId)
+                        .ToDictionary(
+                            group => group.Key, 
+                            group => group.Select(record => record.AgentName).ToList()
+                        );
+
+                    // Go through each group and add to the table
+                    foreach (var agentId in groupedCopilotAgentRecords.Keys)
+                    {
+                        var agentName = groupedCopilotAgentRecords[agentId].FirstOrDefault();
+                        var agentInteractions = groupedCopilotAgentRecords[agentId].Count();
+                        
+                        _logger.LogInformation($"AgentId: {agentId} - AgentName: {agentName} - Interactions: {agentInteractions}");
+
+                        await _azureTableService.AddAgentInteractionsDailyAggregationForUserAsync(agentId, userId, agentInteractions, agentName);
+                    }
+
+                }
+            
 
                 return new OkResult();
             }
