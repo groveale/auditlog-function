@@ -12,8 +12,8 @@ public class AgentInteraction : BaseTableEntity
 
     public TableEntity ToDailyTableEntity(string stringDate)
     {
-        PartitionKey = $"{stringDate}-{AgentId}";
-        RowKey = UPN;
+        PartitionKey = $"{stringDate}-{UPN}";
+        RowKey = AgentId;
 
         return new TableEntity(PartitionKey, RowKey)
         {

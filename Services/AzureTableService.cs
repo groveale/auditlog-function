@@ -386,11 +386,11 @@ namespace groveale.Services
                     // Handle Office interactions
                     if (entity.AgentId != null)
                     {
-                        copilotUsage.App = AppType.CopilotChat;
+                        copilotUsage.App = AppType.Agent;
                     }
                     else
                     {
-                        copilotUsage.App = AppType.Agent;
+                        copilotUsage.App = AppType.CopilotChat;
                     }
                     break;
                 case "Edge":
@@ -426,7 +426,7 @@ namespace groveale.Services
             }
 
             
-            var copilotUsageEntity = copilotUsage.ToDailyTableEntity(entity.EventDateString);
+            var copilotUsageEntity = copilotUsage.ToDailyAggregationTableEntity(entity.EventDateString);
             
             // Add the entity to the table
             await CreateOrUpdateCopilotUsageEntityAsync(copilotUsageEntity, copilotUsage.TotalInteractionCount);
@@ -442,7 +442,7 @@ namespace groveale.Services
                 App = appType
             };
 
-            var copilotUsageEntity = copilotUsage.ToDailyTableEntity(DateTime.UtcNow.ToString("yyyy-MM-dd"));
+            var copilotUsageEntity = copilotUsage.ToDailyAggregationTableEntity(DateTime.UtcNow.ToString("yyyy-MM-dd"));
             // Add the entity to the table
             await CreateOrUpdateCopilotUsageEntityAsync(copilotUsageEntity, copilotUsage.TotalInteractionCount);
         }

@@ -53,6 +53,18 @@ public class CopilotTimeFrameUsage : BaseTableEntity
         };
     }
 
+    public TableEntity ToDailyAggregationTableEntity(string stringDate)
+    {
+        PartitionKey = $"{stringDate}-{UPN}";
+        RowKey = App.ToString();
+
+        return new TableEntity(PartitionKey, RowKey)
+        {
+            { nameof(TotalDailyActivityCount), 1 },
+            { nameof(TotalInteractionCount), TotalInteractionCount }
+        };
+    }
+
     public string GetAppString()
     {
         return App.ToString();
