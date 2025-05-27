@@ -417,6 +417,10 @@ namespace groveale.Services
                     // Handle Copilot Studio interactions
                     copilotUsage.App = AppType.CopilotStudio;
                     break;
+                case "Forms":
+                    // Handle Forms interactions
+                    copilotUsage.App = AppType.Forms;
+                    break;
                 default:
                     // Handle other cases or log an error
                     // We have a new appHost to handle

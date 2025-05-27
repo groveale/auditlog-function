@@ -16,14 +16,16 @@ namespace groveale
         private readonly IM365ActivityService _m365ActivityService;
         private readonly IAzureTableService _azureTableService; 
         private readonly IKeyVaultService _keyVaultService;
+        private readonly IExclusionEmailService _exclusionEmailService;
 
-        public ReceiveEvents(ILogger<ReceiveEvents> logger, ISettingsService settingsService, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService)
+        public ReceiveEvents(ILogger<ReceiveEvents> logger, ISettingsService settingsService, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService, IExclusionEmailService exclusionEmailService)
         {
             _logger = logger;
             _settingsService = settingsService;
             _m365ActivityService = m365ActivityService;
             _azureTableService = azureTableService;
             _keyVaultService = keyVaultService;
+            _exclusionEmailService = exclusionEmailService;
 
         }
 
@@ -108,8 +110,11 @@ namespace groveale
                 // Encrypt the upn, data added to the tables will be encrypted
                 var encryptionService = await DeterministicEncryptionService.CreateAsync(_settingsService, _keyVaultService);
 
+                // Just call it - caching happens automatically
+                var exclusionEmails = await _exclusionEmailService.LoadEmailsFromPersonFieldAsync();
+
                 // Get copilot audit records
-                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService);
+                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService, exclusionEmails);
 
                 // TODO remove this for prod
                  

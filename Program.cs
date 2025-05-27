@@ -6,7 +6,8 @@ using groveale;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
-    .ConfigureServices(services => {
+    .ConfigureServices(services =>
+    {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
@@ -24,6 +25,8 @@ var host = new HostBuilder()
 
         // Register the KeyVaultService
         services.AddSingleton<IKeyVaultService, KeyVaultService>();
+        
+        services.AddSingleton<IExclusionEmailService, ExclusionEmailService>();
 
     })
     .Build();

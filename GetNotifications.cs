@@ -14,14 +14,16 @@ namespace groveale
         private readonly IAzureTableService _azureTableService;
         private readonly IKeyVaultService _keyVaultService;
         private readonly ISettingsService _settingsService;
+        private readonly IExclusionEmailService _exclusionEmailService;
 
-        public GetNotifications(ILogger<GetNotifications> logger, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService, ISettingsService settingsService)
+        public GetNotifications(ILogger<GetNotifications> logger, IM365ActivityService m365ActivityService, IAzureTableService azureTableService, IKeyVaultService keyVaultService, ISettingsService settingsService, IExclusionEmailService exclusionEmailService)
         {
             _logger = logger;
             _m365ActivityService = m365ActivityService;
             _azureTableService = azureTableService;
             _keyVaultService = keyVaultService;
             _settingsService = settingsService;
+            _exclusionEmailService = exclusionEmailService;
         }
 
         [Function("GetNotifications")]
@@ -47,9 +49,15 @@ namespace groveale
                     return new OkObjectResult("No notifications found.");
                 }
                 _logger.LogInformation($"Found {notifications.Count} notifications.");
+                
+                var exclusionEmails = await _exclusionEmailService.LoadEmailsFromPersonFieldAsync();
+
+                // log the exclusion emails
+                // TODO remove this in production
+                _logger.LogInformation("Exclusion Emails: {ExclusionEmails}", string.Join(", ", exclusionEmails));
 
                 // Create the EncryptionService
-                 _logger.LogInformation("Attempting to create EncryptionService");
+                _logger.LogInformation("Attempting to create EncryptionService");
                 var encryptionService = await DeterministicEncryptionService.CreateAsync(_settingsService, _keyVaultService);
                  _logger.LogInformation("Encryption Service created");
 
@@ -57,8 +65,10 @@ namespace groveale
                 var test = encryptionService.Encrypt("test");
                 _logger.LogInformation("Encryption Test: {Test}", test);
 
+                
+
                 // Get copilot audit records
-                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService);
+                var copilotAuditRecords = await _m365ActivityService.GetCopilotActivityNotificationsAsync(notifications, encryptionService, exclusionEmails);
                 var RAWCopilotInteractions = await _m365ActivityService.GetCopilotActivityNotificationsRAWAsync(notifications);
 
                 // store the new lists in the table

@@ -20,7 +20,7 @@ namespace groveale.Services
         Task<string> StopSubscriptionAsync(string configuredContentType);
 
         Task<List<ListAuditObj>> GetListCreatedNotificationsAsync(List<NotificationResponse> notifications);
-        Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService);
+        Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService, HashSet<string> exclusionEmails = null);
 
         Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications);
 
@@ -185,7 +185,7 @@ namespace groveale.Services
             }
         }
 
-        public async Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService)
+        public async Task<List<AuditData>> GetCopilotActivityNotificationsAsync(List<NotificationResponse> notifications, DeterministicEncryptionService encryptionService, HashSet<string> exclusionEmails = null)
         {
             if (string.IsNullOrEmpty(_accessToken))
             {
@@ -226,6 +226,13 @@ namespace groveale.Services
 
                                 try
                                 {
+                                    // Check if the user is in the exclusion list
+                                    if (exclusionEmails?.Contains(notificationResponse.UserId.ToString()) == true)
+                                    {
+                                        _logger.LogInformation($"User {notificationResponse.UserId} is in the exclusion list. Skipping notification.");
+                                        continue;
+                                    }
+
                                     // Process the filtered notification
                                     var copilotEventData = new AuditData
                                     {
