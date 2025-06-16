@@ -8,6 +8,8 @@ using groveale.Models;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Azure.Identity;
+using Azure.Core;
 
 namespace groveale.Services
 {
@@ -25,7 +27,7 @@ namespace groveale.Services
         Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications);
 
         Task<List<NotificationResponse>> GetAvailableNotificationsAsync(string configuredContentType);
-        
+
     }
 
     public class M365ActivityService : IM365ActivityService
@@ -52,21 +54,27 @@ namespace groveale.Services
                 return;
             }
 
-            var tokenEndpoint = $"https://login.microsoftonline.com/{_settingsService.TenantDomain}/oauth2/token?api-version=1.0";
-            var requestBody = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("grant_type", "client_credentials"),
-                new KeyValuePair<string, string>("resource", "https://manage.office.com"),
-                new KeyValuePair<string, string>("client_id", _settingsService.ClientId),
-                new KeyValuePair<string, string>("client_secret", _settingsService.ClientSecret)
-            });
+            // var tokenEndpoint = $"https://login.microsoftonline.com/{_settingsService.TenantDomain}/oauth2/token?api-version=1.0";
+            // var requestBody = new FormUrlEncodedContent(new[]
+            // {
+            //     new KeyValuePair<string, string>("grant_type", "client_credentials"),
+            //     new KeyValuePair<string, string>("resource", "https://manage.office.com"),
+            //     new KeyValuePair<string, string>("client_id", _settingsService.ClientId),
+            //     new KeyValuePair<string, string>("client_secret", _settingsService.ClientSecret)
+            // });
 
-            var response = await _httpClient.PostAsync(tokenEndpoint, requestBody);
-            response.EnsureSuccessStatusCode();
+            // var response = await _httpClient.PostAsync(tokenEndpoint, requestBody);
+            // response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
-            _accessToken = tokenResponse.AccessToken;
+            // var responseContent = await response.Content.ReadAsStringAsync();
+            // var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
+            // _accessToken = tokenResponse.AccessToken;
+            
+            var credential = new DefaultAzureCredential();
+            var tokenRequestContext = new TokenRequestContext(new[] { "https://manage.office.com/.default" });
+            var token = await credential.GetTokenAsync(tokenRequestContext);
+
+            _accessToken = token.Token;
 
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
@@ -176,7 +184,7 @@ namespace groveale.Services
                 // Log the success
                 _logger.LogInformation($"Subscription for '{configuredContentType}' has been stopped.");
                 return "Subscription stopped";
-            } 
+            }
             catch (HttpRequestException ex)
             {
                 // If we can't stop it report the error
@@ -216,7 +224,7 @@ namespace groveale.Services
                         if (jsonReader.TokenType == JsonToken.StartObject)
                         {
                             dynamic notificationResponse = serializer.Deserialize<object>(jsonReader);
-                            
+
                             // This is an example of how to filter notifications based on the operation
                             // If you are interested in a specific operation, you can filter the notifications here
                             // You may also need to create a class to build the operation object
@@ -250,7 +258,7 @@ namespace groveale.Services
                                         Id = notificationResponse.Id
                                     };
 
-                                    _logger.LogInformation($"CopilotInteraction Obtained");                 
+                                    _logger.LogInformation($"CopilotInteraction Obtained");
 
                                     copilotInteractions.Add(copilotEventData);
                                 }
@@ -271,8 +279,8 @@ namespace groveale.Services
 
             return copilotInteractions;
         }
-    
-         public async Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications)
+
+        public async Task<List<dynamic>> GetCopilotActivityNotificationsRAWAsync(List<NotificationResponse> notifications)
         {
             if (string.IsNullOrEmpty(_accessToken))
             {
@@ -303,13 +311,13 @@ namespace groveale.Services
                         if (jsonReader.TokenType == JsonToken.StartObject)
                         {
                             dynamic notificationResponse = serializer.Deserialize<object>(jsonReader);
-                            
+
                             // This is an example of how to filter notifications based on the operation
                             // If you are interested in a specific operation, you can filter the notifications here
                             // You may also need to create a class to build the operation object
                             if (notificationResponse.Operation == "CopilotInteraction")
                             {
-                                
+
 
                                 _logger.LogInformation($"CopilotInteraction Obtained");
                                 copilotInteractions.Add(notificationResponse);
@@ -326,7 +334,7 @@ namespace groveale.Services
 
             return copilotInteractions;
         }
-    
+
 
         public async Task<List<ListAuditObj>> GetListCreatedNotificationsAsync(List<NotificationResponse> notifications)
         {
@@ -359,7 +367,7 @@ namespace groveale.Services
                         if (jsonReader.TokenType == JsonToken.StartObject)
                         {
                             dynamic notificationResponse = serializer.Deserialize<object>(jsonReader);
-                            
+
                             // This is an example of how to filter notifications based on the operation
                             // If you are interested in a specific operation, you can filter the notifications here
                             // You may also need to create a class to build the operation object
