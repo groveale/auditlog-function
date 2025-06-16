@@ -34,8 +34,8 @@ param encryptionKey string
 @description('Key Vault encryption key secret name')
 param keyVaultEncryptionKeySecretName string = 'email-encryption-key'
 
-@description('Entra Tenant Domain')
-param tenantDomain string
+@description('Entra Tenant Id')
+param tenantId string
 
 @description('Authentication GUID')
 param authGuid string
@@ -177,8 +177,8 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
           value: environment
         }
         {
-          name: 'TenantDomain'
-          value: tenantDomain
+          name: 'tenantId'
+          value: tenantId
         }
         {
           name: 'AuthGuid'

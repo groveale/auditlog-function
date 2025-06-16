@@ -17,7 +17,7 @@ param storageAccountType string = 'Standard_LRS'
 param appServicePlanSku string = 'Y1'
 
 // Generate unique names
-var storageAccountName = 'st${uniqueString(resourceGroup().id)}'
+var storageAccountName = 'st${uniqueString(resourceGroup().id)}
 var appServicePlanName = 'asp-${functionAppName}'
 var applicationInsightsName = 'ai-${functionAppName}'
 

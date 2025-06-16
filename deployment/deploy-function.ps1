@@ -9,7 +9,7 @@ param(
     [string]$ApplicationName = "gamification",
     [string]$Environment = "test",
     [string]$EncryptionKey = "<your-encryption-key-here>", # Should be a secure value
-    [string]$TenantDomain = "<your-tenant-domain>",
+    [string]$TenantId = "<your-tenant-id>",
     [string]$AuthGuid = "<your-auth-guid>",
     [string]$SPO_SiteId = "<your-spo-site-id>",
     [string]$SPO_ListId = "<your-spo-list-id>"
@@ -112,7 +112,7 @@ try {
         applicationName=$ApplicationName `
         environment=$Environment `
         encryptionKey="$EncryptionKey" `
-        tenantDomain=$TenantDomain `
+        tenantId=$TenantId `
         authGuid=$AuthGuid `
         spoSiteId=$SPO_SiteId `
         spoListId=$SPO_ListId `
@@ -388,9 +388,27 @@ try {
     }
     
     Write-Host ""
-    Write-Status "Test your function:"
-    Write-Host "Invoke-RestMethod -Uri 'https://$hostname/api/[YourFunctionName]'" -ForegroundColor White
+    Write-Step "Setting Up Audit Subscription via PowerShell"
+    Write-Host "==================================" -ForegroundColor Cyan
+
+    $webhookAddressURLEncoded = [System.Web.HttpUtility]::UrlEncode("https://$hostname/api/ReceiveEvents")
+
+    $subscriptionUrl = "https://$hostname/api/SubscribeToEvent?contentType=Audit.General&webhookAddress=$webhookAddressURLEncoded"
+
+    $response = Invoke-RestMethod -Uri $subscriptionUrl -Method Post
+    Write-Host "Subscription setup response:"
+    Write-Host $response
+
+    Write-Host "`nYou can now test Copilot interactions are coming through by triggering an event in M365 Copilot"
+
     Write-Host ""
+
+    Write-Host "`n=== Test Copilot Interactions are coming through ==="
+    Write-Host "1. Please wait 5 minutes to allow the event to be processed (from your Copilot interaction testing)."
+    Write-Host "2. Visit the following URL to check the results:"
+    Write-Host "   https://$hostname/api/GetNotifications"
+    Write-Host ""
+    Write-Host "If you do not see your interaction, something has gone wrong. Please check the Azure Function logs for errors."
 
     # Clean up
     Write-Step "Cleaning up temporary files..."

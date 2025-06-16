@@ -30,16 +30,12 @@ namespace groveale.Services
         {
             _settingsService = settingsService;
 
-            var _clientSecretCredential = new ClientSecretCredential(
-                   _settingsService.TenantId,
-                  _settingsService.ClientId,
-                  _settingsService.ClientSecret);
+            var credential = new DefaultAzureCredential();
 
-            _graphServiceClient = new GraphServiceClient(_clientSecretCredential,
-                // Use the default scope, which will request the scopes
-                // configured on the app registration
+            _graphServiceClient = new GraphServiceClient(
+                credential,
                 new[] { "https://graph.microsoft.com/.default" });
-
+                
             _logger = logger;
         }
 
