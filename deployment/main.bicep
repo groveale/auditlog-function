@@ -81,8 +81,6 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppI
   tags: tags
   properties: {
     Application_Type: 'web'
-    Flow_Type: 'Redfield'
-    WorkspaceResourceId: ''
     RetentionInDays: 90
   }
 }
@@ -161,6 +159,7 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
   location: location
   tags: tags
   kind: 'functionapp'
+  dependsOn: enableAppInsights ? [appInsights] : []
   identity: enableManagedIdentity ? {
     type: 'SystemAssigned'
   } : null
