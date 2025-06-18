@@ -27,6 +27,13 @@ namespace groveale.Services
             return new DeterministicEncryptionService(key);
         }
 
+        public static async Task<DeterministicEncryptionService> CreateAsyncForKeyRotation(IKeyVaultService kvService, string keyVaultEncryptionKeySecretName)
+        {
+            var secret = await kvService.GetSecretAsync(keyVaultEncryptionKeySecretName);
+            var key = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(secret));
+            return new DeterministicEncryptionService(key);
+        }
+
         public string Encrypt(string plainText)
         {
             using var aes = Aes.Create();

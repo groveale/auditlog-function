@@ -3,6 +3,7 @@ using Azure.Data.Tables;
 using groveale.Models;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -18,6 +19,12 @@ namespace groveale.Services
         Task AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType appType, string userId, int count);
         Task AddAgentInteractionsDailyAggregationForUserAsync(string agentId, string userId, int count, string agentName);
         Task LogWebhookTriggerAsync(LogEvent webhookEvent);
+        Task<bool> GetWebhookStateAsync();
+        Task SetWebhookStateAsync(bool isPaused);
+        Task RotateKeyRecentDailyTableValues(TableClient tableClient, DeterministicEncryptionService existingKeyService, DeterministicEncryptionService newKeyService);
+
+        TableClient GetCopilotAgentInteractionTableClient();
+        TableClient GetCopilotInteractionDailyAggregationsTableClient();
     }
 
     public class AzureTableService : IAzureTableService
@@ -28,11 +35,14 @@ namespace groveale.Services
         private readonly string _copilotInteractionDetailsTable = "CopilotInteractionDetails";
         private readonly string _copilotInteractionDailyAggregationForUserTable = "CopilotInteractionDailyAggregationByAppAndUser3";
         private readonly string _agentInteractionDailyAggregationForUserTable = "AgentInteractionDailyAggregationByUserAndAgentId";
+        private readonly string _auditWebhookFunctionTable = "WebhookFunctionState";
+        private readonly string _unhandledAppHosts = "UnhandledAppHosts";
         private readonly TableClient copilotInteractionDetailsTableClient;
         private readonly TableClient copilotInteractionDailyAggregationsTableClient;
         private readonly TableClient copilotAgentInteractionTableClient;
+        private readonly TableClient auditWebhookStateTableClient;
+        private readonly TableClient unhandledAppHostsTableClient;
         private readonly string _webhookEventsTable = "WebhookTriggerEvents";
-
         private readonly ILogger<AzureTableService> _logger;
 
         public AzureTableService(ISettingsService settingsService, ILogger<AzureTableService> logger)
@@ -51,6 +61,12 @@ namespace groveale.Services
 
             copilotAgentInteractionTableClient = _serviceClient.GetTableClient(_agentInteractionDailyAggregationForUserTable);
             copilotAgentInteractionTableClient.CreateIfNotExists();
+
+            auditWebhookStateTableClient = _serviceClient.GetTableClient(_auditWebhookFunctionTable);
+            auditWebhookStateTableClient.CreateIfNotExists();
+
+            unhandledAppHostsTableClient = _serviceClient.GetTableClient(_unhandledAppHosts);
+            unhandledAppHostsTableClient.CreateIfNotExists();
         }
 
         public async Task AddCopilotInteractionRAWAysnc(dynamic entity)
@@ -425,16 +441,59 @@ namespace groveale.Services
                     // Handle other cases or log an error
                     // We have a new appHost to handle
                     _logger.LogWarning($"Unhandled AppHost: {entity.AppHost}");
-                    // TODO write to a table
+
+                    await AddUnhandledAppHostAsync(entity.AppHost);
+
                     break;
             }
 
-            
+
             var copilotUsageEntity = copilotUsage.ToDailyAggregationTableEntity(entity.EventDateString);
-            
+
             // Add the entity to the table
             await CreateOrUpdateCopilotUsageEntityAsync(copilotUsageEntity, copilotUsage.TotalInteractionCount);
 
+        }
+
+        private async Task AddUnhandledAppHostAsync(string appHost)
+        {
+            try
+            {
+                // Check if the appHost is already logged
+                var retrieveOperation = await unhandledAppHostsTableClient.GetEntityIfExistsAsync<TableEntity>(appHost, appHost);
+                if (retrieveOperation.HasValue)
+                {
+                    // If it exists, we don't need to add it again
+                    _logger.LogInformation($"AppHost '{appHost}' is already logged as unhandled.");
+
+                    // increment the count of unhandled app hosts
+                    var existingEntity = retrieveOperation.Value;
+                    existingEntity["Count"] = (int)(existingEntity.ContainsKey("Count") ? existingEntity["Count"] : 0) + 1;
+
+                    await unhandledAppHostsTableClient.UpdateEntityAsync(existingEntity, existingEntity.ETag, TableUpdateMode.Merge);
+                    _logger.LogInformation($"Incremented count for unhandled AppHost '{appHost}' to {existingEntity["Count"]}");
+
+                    return;
+                }
+                else
+                {
+                    var unhandledAppHostEntity = new TableEntity(appHost, appHost)
+                    {
+                        { "Count", 1 }
+                    };
+
+                    await unhandledAppHostsTableClient.AddEntityAsync(unhandledAppHostEntity);
+
+                    _logger.LogInformation($"Added unhandled AppHost '{appHost}' to the table.");
+                }
+            }
+            catch (RequestFailedException ex)
+            {
+                _logger.LogError(ex, "Error adding unhandled AppHost to table storage.");
+                _logger.LogError("Message: {Message}", ex.Message);
+                _logger.LogError("Status: {Status}", ex.Status);
+                _logger.LogError("StackTrace: {StackTrace}", ex.StackTrace);
+            }
         }
 
         public async Task AddSpecificCopilotInteractionDailyAggregationForUserAsync(AppType appType, string userId, int count)
@@ -552,5 +611,144 @@ namespace groveale.Services
             }
         }
 
+        public async Task RotateKeyRecentDailyTableValues(TableClient tableClient, DeterministicEncryptionService existingKeyService, DeterministicEncryptionService newKeyService)
+        {
+            // This method is a placeholder for the decryption logic
+            // It should decrypt all UPNs in the table storage for the last 7 days
+            // The actual implementation will depend on the encryption method used
+            _logger.LogInformation("Decrypting recent daily table values...");
+
+            // Loop for each day from today - 7 days to today (inclusive)
+            // Start with today and work backwards 7 days
+            for (int i = 0; i <= 7; i++)
+            {
+                var date = DateTime.UtcNow.Date.AddDays(-i);
+                var nextDate = date.AddDays(1);
+
+                string start = date.ToString("yyyy-MM-dd");
+                string end = nextDate.ToString("yyyy-MM-dd");
+
+                string filter = $"PartitionKey ge '{start}' and PartitionKey lt '{end}'";
+
+                // log the filter
+                _logger.LogInformation($"Querying table with filter: {filter}");
+
+
+                await foreach (var entity in tableClient.QueryAsync<TableEntity>(filter: filter))
+                {
+
+                    // LOG THE PARTITION KEY
+                    _logger.LogInformation($"Processing entity with PartitionKey: {entity.PartitionKey}");
+
+                    // Step 1: Extract encrypted part from PartitionKey
+                    // need to strip out the data and hyphen from the PartitionKey. AS the format is yyyy-MM-dd-<encrypted-blob> we can just count so remove first 11 chars
+                    string encyrptedUPN = entity.PartitionKey.Substring(11); // Remove the date prefix
+                                                                             // Decrypt the UPN using the existing key service
+                    string decryptedUPN = existingKeyService.Decrypt(encyrptedUPN);
+
+
+                    // log the decrypted UPN
+                    _logger.LogInformation($"Decrypted UPN: {decryptedUPN}");
+
+                    // Encrypt the UPN using the new key service
+                    string newEncryptedUPN = newKeyService.Encrypt(decryptedUPN);
+
+                    // Create a new partition key with the new encrypted UPN
+                    string newPartitionKey = $"{start}-{newEncryptedUPN}";
+
+                    // log the new partition key
+                    _logger.LogInformation($"New PartitionKey: {newPartitionKey}");
+
+                    // Step 2: Copy all properties
+                    var newEntity = new TableEntity(newPartitionKey, entity.RowKey);
+                    foreach (var kvp in entity)
+                    {
+                        if (kvp.Key != "PartitionKey" && kvp.Key != "RowKey")
+                        {
+                            newEntity[kvp.Key] = kvp.Value;
+                        }
+                    }
+
+                    try
+                    {
+
+                        // Step 3: Insert new entity and delete old
+                        await tableClient.AddEntityAsync(newEntity);
+                        await tableClient.DeleteEntityAsync(entity.PartitionKey, entity.RowKey);
+                    }
+                    catch (RequestFailedException ex)
+                    {
+                        _logger.LogError(ex, "Error querying or updating table storage for date {Date}.", date.ToString("yyyy-MM-dd"));
+                        _logger.LogError("Message: {Message}", ex.Message);
+                        _logger.LogError("Status: {Status}", ex.Status);
+                        _logger.LogError("StackTrace: {StackTrace}", ex.StackTrace);
+                    }
+
+                    _logger.LogInformation($"Rotated key for entity with PartitionKey: {entity.PartitionKey}, RowKey: {entity.RowKey}");
+                }
+            }
+
+        }
+
+
+        public async Task<bool> GetWebhookStateAsync()
+        {
+            try
+            {
+                var response = await auditWebhookStateTableClient.GetEntityIfExistsAsync<TableEntity>("Webhook", "Pause");
+                if (response.HasValue && response.Value.ContainsKey("IsPaused"))
+                {
+                    return response.Value.GetBoolean("IsPaused") ?? false; // If property missing, treat as not paused
+                }
+                // If the entity does not exist, treat as not paused
+                _logger.LogWarning("Webhook state entity not found. Returning not paused (false).");
+                return false;
+            }
+            catch (RequestFailedException ex)
+            {
+                _logger.LogError(ex, "Failed to get webhook state. Returning not paused (false).");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while getting webhook state. Returning not paused (false).");
+                return false;
+            }
+        }
+
+        public async Task SetWebhookStateAsync(bool isPaused)
+        {
+            try
+            {
+
+
+                var entity = new TableEntity("Webhook", "Pause")
+                {
+                    { "IsPaused", isPaused }
+                };
+                await auditWebhookStateTableClient.UpsertEntityAsync(entity);
+                _logger.LogInformation($"Webhook state set to paused={isPaused}.");
+            }
+            catch (RequestFailedException ex)
+            {
+                _logger.LogError(ex, $"Failed to set webhook state to paused={isPaused}.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while setting webhook state.");
+                throw;
+            }
+        }
+
+        public TableClient GetCopilotAgentInteractionTableClient()
+        {
+            return copilotAgentInteractionTableClient;
+        }
+
+        public TableClient GetCopilotInteractionDailyAggregationsTableClient()
+        {
+            return copilotInteractionDailyAggregationsTableClient;
+        }
     }
 }

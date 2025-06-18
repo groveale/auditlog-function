@@ -62,10 +62,30 @@ param storagePublicNetworkAccess bool = true
 @description('Enable blob public access for storage account')
 param allowBlobPublicAccess bool = false
 
+@description('Enable Application Insights')
+param enableAppInsights bool = true
+
+@description('App Insights location (defaults to function app location)')
+param appInsightsLocation string = location
+
 var storageAccountName = 'store${applicationName}'
 var appServicePlanName = 'asp-${applicationName}'
 var keyVaultName = 'kv-${applicationName}'
-var functionAppName = 'func-${applicationName}-${uniqueString(resourceGroup().id)}'
+var functionAppName = 'func-${applicationName}'
+var appInsightsName = 'appi-${applicationName}'
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
+  name: appInsightsName
+  location: appInsightsLocation
+  kind: 'web'
+  tags: tags
+  properties: {
+    Application_Type: 'web'
+    Flow_Type: 'Redfield'
+    WorkspaceResourceId: ''
+    RetentionInDays: 90
+  }
+}
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
@@ -148,6 +168,18 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
     serverFarmId: appServicePlan.id
     siteConfig: {
       appSettings: [
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: enableAppInsights ? appInsights.properties.InstrumentationKey : ''
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: enableAppInsights ? appInsights.properties.ConnectionString : ''
+        }
+        {
+          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value: '~3'
+        }
         {
           name: 'AzureWebJobsStorage'
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=core.windows.net;AccountKey=${storageAccount.listKeys().keys[0].value}'
@@ -262,3 +294,6 @@ output storageAccountName string = storageAccount.name
 output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
 output resourceGroupName string = resourceGroup().name
+output appInsightsName string = enableAppInsights ? appInsights.name : ''
+output appInsightsInstrumentationKey string = enableAppInsights ? appInsights.properties.InstrumentationKey : ''
+output appInsightsConnectionString string = enableAppInsights ? appInsights.properties.ConnectionString : ''

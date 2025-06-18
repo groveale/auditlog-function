@@ -34,6 +34,27 @@ namespace groveale
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
+            // check if the webhook is paused
+            bool webhookPaused = await _azureTableService.GetWebhookStateAsync();
+
+            _logger.LogInformation($"Webhook state: {webhookPaused}");
+
+            if (webhookPaused)
+            {
+                _logger.LogInformation("Webhook is paused, returning 503.");
+                // Log the webhook trigger event
+                await _azureTableService.LogWebhookTriggerAsync(new LogEvent
+                {
+                    EventId = Guid.NewGuid().ToString(),
+                    EventName = "WebhookTrigger",
+                    EventMessage = "Webhook triggered",
+                    EventDetails = "Webhook is paused",
+                    EventCategory = "Webhook",
+                    EventTime = DateTime.UtcNow
+                });
+                return new StatusCodeResult(StatusCodes.Status503ServiceUnavailable);
+            }
+
             try
             {
                 // Log the webhook trigger event
